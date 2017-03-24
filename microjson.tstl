@@ -1,0 +1,111 @@
+#HINT: --depth 300
+
+# Marjorie Hahn
+# CS499: Software Testing
+# Assignment 2: Building a Good Random Test Harness
+# 23 March 2017
+
+<@
+import microjson as mj
+
+MAXDEPTH = 15
+
+def klimitequal(o1,o2,k=0,klimit=MAXDEPTH):
+    if k > klimit:
+        return True
+    if type(o1) != type(o2):
+        return False
+    if type(o1) == list:
+        if len(o1) != len(o2):
+            return False
+        for i in xrange(0,len(o1)):
+            if i > k:
+                return True
+            if not klimitequal(o1[i],o2[i],k+1):
+                return False
+    elif type(o1) == dict:
+        for v in o1.keys():
+            if v not in o2.keys():
+                return False
+            if not klimitequal(o1[v],o2[v],k+1):
+                return False
+    else:
+        return o1 == o2
+
+def isCircular(s,depth=0,seen = []):
+    if depth > MAXDEPTH:
+        return True
+    for v in seen:
+        if klimitequal(s,v):
+            return True
+    newSeen = seen + [s]
+    if type(s) == list:
+        for v in s:
+            if isCircular(v,depth+1,newSeen):
+                return True
+    if type(s) == dict:
+        for v in s.values():
+            if isCircular(v,depth+1,newSeen):
+                return True
+    return False
+@>
+
+pool: <int> 3
+pool: <string> 3
+pool: <unicode> 3
+pool: <uninum> 2
+pool: <bool> 2
+pool: <float> 3
+
+pool: <dict> 5
+pool: <list> 5
+
+pool: <structure> 1
+pool: <jsonencode> 1
+pool: <jsondecode> 1
+
+<int> := <[0..9]>
+<int> = <int> * 10
+<int> = <int> + <int>
+<int> = <int> - <int>
+
+<float> := float(<int>)
+
+<string> := ""
+<string> += <["a"," ",":","/","[","]","{","}","]"]>
+<string> += ","
+<string> += chr(9) #tab
+<string> += chr(13) #return
+<string> += chr(34) #double quote
+<string> += chr(39) #single quote
+
+<unicode> := unichr(4096)
+<unicode> := unichr(62345)
+<unicode> := unichr(23489)
+
+<bool> := True
+<bool> := False
+
+<dict> := {<string>:<structure>}
+(not isCircular(<dict,1>)) and (not isCircular(<structure,1>)) -> <dict> [<string>] = <structure>
+
+<list> := [<structure>]
+(not isCircular(<list,1>)) and (not isCircular(<structure,1>)) -> <list>.append(<structure>)
+
+<structure> := <string>
+<structure> := <unicode>
+<structure> := <float>
+<structure> := <dict>
+<structure> := <list>
+<structure> := <int>
+<structure> := <bool>
+
+#(not isCircular(<structure,1>)) -> print(<structure>)
+#(not isCircular(<structure,1>)) -> print(mj.encode(<structure>))
+
+#{ValueError} isCircular(<structure,1>) -> mj.encode(<structure>)
+
+#(not isCircular(<structure,1>)) -> <jsonencode> := mj.encode(<structure>)
+#<jsondecode> := mj.decode(<jsonencode>)
+
+#<jsondecode> == <structure>
